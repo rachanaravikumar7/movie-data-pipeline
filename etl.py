@@ -139,78 +139,25 @@ def load_data(movies_df, ratings_df):
     conn = sqlite3.connect('movies.db')
     cursor = conn.cursor()
 
-    # Create movies table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS movies (
-            movie_id INTEGER PRIMARY KEY,
-            title TEXT,
-            year INTEGER,
-            decade TEXT,
-            director TEXT,
-            plot TEXT,
-            box_office TEXT,
-            imdb_id TEXT
-        );
-    """)
-
-    # Create ratings table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS ratings (
-            user_id INTEGER,
-            movie_id INTEGER,
-            rating REAL,
-            timestamp INTEGER,
-            FOREIGN KEY(movie_id) REFERENCES movies(movie_id)
-        );
-    """)
-
-    # Create genres table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS genres (
-            genre_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            genre_name TEXT UNIQUE
-        );
-    """)
-
-    # Create movie_genres relationship table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS movie_genres (
-            movie_id INTEGER,
-            genre_id INTEGER,
-            PRIMARY KEY(movie_id, genre_id),
-            FOREIGN KEY(movie_id) REFERENCES movies(movie_id),
-            FOREIGN KEY(genre_id) REFERENCES genres(genre_id)
-        );
-    """)
-
-    # Insert movies table data
-    movies_df[['movieId', 'clean_title', 'year', 'decade', 'director', 'plot', 'box_office', 'imdb_id']] \
-        .rename(columns={'movieId': 'movie_id', 'clean_title': 'title'}) \
-        .to_sql('movies', conn, if_exists='append', index=False)
-
-    # Insert ratings data
-    ratings_df.rename(columns={'movieId': 'movie_id'}) \
-        .to_sql('ratings', conn, if_exists='append', index=False)
-
-    # Insert genres
-    genre_set = set([genre for sublist in movies_df['genres_list'] if isinstance(sublist, list) for genre in sublist])
-    for genre in genre_set:
-        cursor.execute("INSERT OR IGNORE INTO genres (genre_name) VALUES (?);", (genre,))
-
-    # Insert movie-genre relationships
-    for _, row in movies_df.iterrows():
-        if isinstance(row['genres_list'], list):
-            for genre in row['genres_list']:
-                cursor.execute("""
-                    INSERT OR IGNORE INTO movie_genres (movie_id, genre_id)
-                    VALUES (
-                        ?, (SELECT genre_id FROM genres WHERE genre_name = ?)
-                    );
-                """, (row['movieId'], genre))
-
+    # DROP old tables to avoid schema mismatch
+    cursor.execute("DROP TABLE IF EXISTS ratings;")
+    cursor.execute("DROP TABLE IF EXISTS movies;")
+    cursor.execute("DROP TABLE IF EXISTS genres;")
+    cursor.execute("DROP TABLE IF EXISTS movie_genres;")
+    cursor.execute("DROP TABLE IF EXISTS directors;")
     conn.commit()
+
+    # Create new tables with correct schema
+    movies_df[["movieId", "title", "genres", "year", "decade", "director", "plot",
+               "box_office", "imdb_id"]].to_sql('movies', conn, if_exists='replace', index=False)
+
+    ratings_df[["userId", "movieId", "rating", "timestamp"]].to_sql(
+        'ratings', conn, if_exists='replace', index=False
+    )
+
+    print("Data loaded successfully!")
     conn.close()
-    print("Database load completed!")
+
 
 if __name__ == "__main__":
     movies_df, ratings_df = extract_data()
