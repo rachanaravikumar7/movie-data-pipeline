@@ -36,6 +36,16 @@ def extract_data():
     print("Movies Data Sample:")
     print(movies_df.head())
 
+    # Load links.csv to get IMDb IDs
+    links_path = os.path.join(data_folder, "links.csv")
+    links_df = pd.read_csv(links_path)
+
+    # Merge IMDb ID into movies dataframe
+    movies_df = movies_df.merge(links_df[["movieId", "imdbId"]], on="movieId", how="left")
+
+    print("\nMovies with IMDb IDs:")
+    print(movies_df.head())
+
     print("\nRatings Data Sample:")
     print(ratings_df.head())
 
@@ -110,8 +120,7 @@ def transform_data(movies_df):
 
     # Iterate movie rows and enrich data using OMDb
     for index, row in movies_df.iterrows():
-        result = fetch_from_omdb(row['clean_title'], row['year'])
-
+        result = fetch_from_omdb(row["title"], row["imdbId"], row["year"])
         if result:
             movies_df.at[index, 'director'] = result['director']
             movies_df.at[index, 'plot'] = result['plot']
