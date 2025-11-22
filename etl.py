@@ -44,27 +44,25 @@ def extract_data():
 # PART 3 - FETCH DETAILS FROM OMDb API using Title + Year
 
 def fetch_from_omdb(title, year=None):
-    """
-    Fetch movie details from OMDb API using title and optional year.
-    If movie not found → return None 
-    """
-    # Build request parameters for OMDb API
+    # Clean title: keep only alphanumeric and spaces
+    clean = re.sub(r"[^a-zA-Z0-9\s]", "", title)
+
     params = {
         "apikey": OMDB_API_KEY,
-        "t": title  # search by title field
+        "t": clean
     }
 
-    if year:  # If year available, add it to make match more accurate
-        params["y"] = str(year)
+    if year and not pd.isna(year):
+        params["y"] = str(int(year))
 
-    url = "https://www.omdbapi.com/"
+    url = "http://www.omdbapi.com/"
 
     try:
         response = requests.get(url, params=params)
         data = response.json()
 
-        # If found, return the details that we care about
         if data.get("Response") == "True":
+            print(f"✔ OMDb match: {clean}")
             return {
                 "director": data.get("Director"),
                 "plot": data.get("Plot"),
@@ -72,12 +70,13 @@ def fetch_from_omdb(title, year=None):
                 "imdb_id": data.get("imdbID")
             }
         else:
-            # Movie not found: return None
+            print(f"✘ No OMDb match for: {clean}")
             return None
 
     except Exception as e:
-        print(f"OMDb request failed for title: {title} | Error: {e}")
+        print(f" API request failed: {clean} → {e}")
         return None
+
 
 # PART 4 - TRANSFORM DATA (Feature Engineering Included)
 
