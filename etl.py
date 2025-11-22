@@ -37,7 +37,7 @@ def extract_data():
     print(movies_df.head())
 
     # Load links.csv to get IMDb IDs
-    links_path = os.path.join(data_folder, "links.csv")
+    links_path = "data/links.csv"
     links_df = pd.read_csv(links_path)
 
     # Merge IMDb ID into movies dataframe
