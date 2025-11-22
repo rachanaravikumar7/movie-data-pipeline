@@ -17,7 +17,7 @@ RATINGS_CSV = "data/ratings.csv" # Path to ratings CSV file
 OMDB_API_KEY = os.getenv("OMDB_API_KEY")
 
 if OMDB_API_KEY is None:
-    raise ValueError("❌ Please set your OMDB_API_KEY environment variable before running ETL.")
+    raise ValueError("Please set your OMDB_API_KEY environment variable before running ETL.")
 
 # PART 2 - EXTRACT DATA
 
@@ -43,26 +43,32 @@ def extract_data():
 
 # PART 3 - FETCH DETAILS FROM OMDb API using Title + Year
 
-def fetch_from_omdb(title, year=None):
-    # Clean title: keep only alphanumeric and spaces
-    clean = re.sub(r"[^a-zA-Z0-9\s]", "", title)
+def fetch_from_omdb(title, imdb_id=None, year=None):
+    # Base API parameters
+    params = {"apikey": OMDB_API_KEY}
 
-    params = {
-        "apikey": OMDB_API_KEY,
-        "t": clean
-    }
+    # Prefer IMDb ID if available
+    if imdb_id and not pd.isna(imdb_id):
+        # OMDb requires "tt" prefix
+        imdb_id = f"tt{int(imdb_id):07d}"
+        params["i"] = imdb_id
+        print(f"→ Searching via IMDb ID: {imdb_id}")
+    else:
+        # Fallback to title search (clean title)
+        clean = re.sub(r"[^a-zA-Z0-9\s]", "", title)
+        params["t"] = clean
+        print(f"→ Fallback to Title Search: {clean}")
 
-    if year and not pd.isna(year):
-        params["y"] = str(int(year))
-
-    url = "http://www.omdbapi.com/"
+        # Add year only if available
+        if year and not pd.isna(year):
+            params["y"] = str(int(year))
 
     try:
-        response = requests.get(url, params=params)
+        response = requests.get("http://www.omdbapi.com/", params=params)
         data = response.json()
 
         if data.get("Response") == "True":
-            print(f"✔ OMDb match: {clean}")
+            print(f" OMDb Match: {data.get('Title')}")
             return {
                 "director": data.get("Director"),
                 "plot": data.get("Plot"),
@@ -70,16 +76,15 @@ def fetch_from_omdb(title, year=None):
                 "imdb_id": data.get("imdbID")
             }
         else:
-            print(f"✘ No OMDb match for: {clean}")
+            print(f" OMDb NO MATCH: {title}")
             return None
 
     except Exception as e:
-        print(f" API request failed: {clean} → {e}")
+        print(f" Error calling OMDb → {e}")
         return None
 
 
-# PART 4 - TRANSFORM DATA (Feature Engineering Included)
-
+# PART 4 - TRANSFORM DATA 
 import re
 
 def transform_data(movies_df):
