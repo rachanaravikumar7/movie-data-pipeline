@@ -14,7 +14,7 @@ RATINGS_CSV = "data/ratings.csv" # Path to ratings CSV file
 
 # Step 3: OMDb API Key
 
-OMDB_API_KEY = os.getenv("OMDB_API_KEY")
+OMDB_API_KEY = "559686c8"
 
 if OMDB_API_KEY is None:
     raise ValueError("Please set your OMDB_API_KEY environment variable before running ETL.")
@@ -119,7 +119,7 @@ def transform_data(movies_df):
     movies_df['imdb_id'] = None
 
     # Iterate movie rows and enrich data using OMDb
-    for index, row in movies_df.iterrows():
+    for index, row in movies_df.head(200).iterrows():
         result = fetch_from_omdb(row["title"], row["imdbId"], row["year"])
         if result:
             movies_df.at[index, 'director'] = result['director']
