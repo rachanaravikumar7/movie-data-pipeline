@@ -214,5 +214,5 @@ def load_data(movies_df, ratings_df):
 
 if __name__ == "__main__":
     movies_df, ratings_df = extract_data()
-    movies_df = transform_data(movies_df)
+    movies_df = transform_data(movies_df, ratings_df)
     load_data(movies_df, ratings_df)
