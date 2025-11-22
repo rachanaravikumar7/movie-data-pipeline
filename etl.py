@@ -97,7 +97,7 @@ def fetch_from_omdb(title, imdb_id=None, year=None):
 # PART 4 - TRANSFORM DATA 
 import re
 
-def transform_data(movies_df):
+def transform_data(movies_df, ratings_df):
     print("\nTransforming data + Enriching from OMDb...")
 
     # Extract release year from movie title
